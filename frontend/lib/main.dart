@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 void main() {
-  runApp(MaterialApp(home: DecisionApp()));
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: DecisionApp(),
+  ));
 }
 
 class DecisionItem {
@@ -28,11 +31,10 @@ class _DecisionAppState extends State<DecisionApp> {
   final TextEditingController conController = TextEditingController();
 
   double get score {
-    int totalPros = pros.fold(0, (sum, item) => sum + item.weight);
-    int totalCons = cons.fold(0, (sum, item) => sum + item.weight);
+    int totalPros = pros.fold(0, (s, i) => s + i.weight);
+    int totalCons = cons.fold(0, (s, i) => s + i.weight);
 
     if (totalPros + totalCons == 0) return 0;
-
     return (totalPros / (totalPros + totalCons)) * 100;
   }
 
@@ -42,15 +44,18 @@ class _DecisionAppState extends State<DecisionApp> {
     return Colors.red;
   }
 
+  Color get bgColor {
+    if (score >= 70) return Colors.green.shade50;
+    if (score >= 40) return Colors.orange.shade50;
+    return Colors.red.shade50;
+  }
+
   void setTitle() {
-    setState(() {
-      decisionTitle = titleController.text;
-    });
+    setState(() => decisionTitle = titleController.text);
   }
 
   void addPro() {
-    if (proController.text.trim().isEmpty) return;
-
+    if (proController.text.isEmpty) return;
     setState(() {
       pros.add(DecisionItem(text: proController.text, weight: 5));
       proController.clear();
@@ -58,8 +63,7 @@ class _DecisionAppState extends State<DecisionApp> {
   }
 
   void addCon() {
-    if (conController.text.trim().isEmpty) return;
-
+    if (conController.text.isEmpty) return;
     setState(() {
       cons.add(DecisionItem(text: conController.text, weight: 5));
       conController.clear();
@@ -77,49 +81,62 @@ class _DecisionAppState extends State<DecisionApp> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text("Decision App"),
+        title: Text("Decision Maker"),
         centerTitle: true,
+        backgroundColor: scoreColor,
       ),
       body: Column(
         children: [
           SizedBox(height: 10),
 
-          // 📝 DECISION TITLE INPUT
+          // TITLE INPUT
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      hintText: "Enter your decision (e.g. Change job?)",
-                      border: OutlineInputBorder(),
+            child: Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              elevation: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: InputDecoration(
+                        hintText: "What is your decision?",
+                        border: InputBorder.none,
+                      ),
                     ),
-                  ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton(
+                        onPressed: setTitle,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: scoreColor,
+                        ),
+                        child: Text("Set"),
+                      ),
+                    )
+                  ],
                 ),
-                SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: setTitle,
-                  child: Text("Set"),
-                )
-              ],
+              ),
             ),
           ),
 
-          // DISPLAY TITLE
           if (decisionTitle.isNotEmpty)
             Text(
               decisionTitle,
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style:
+                  TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
 
           SizedBox(height: 10),
 
-          // 🎯 CIRCLE SCORE
+          // SCORE
           CircularPercentIndicator(
-            radius: 110,
+            radius: 100,
             lineWidth: 12,
             percent: score / 100,
             animation: true,
@@ -128,7 +145,8 @@ class _DecisionAppState extends State<DecisionApp> {
               children: [
                 Text(
                   "${score.toStringAsFixed(1)}%",
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                  style:
+                      TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                 ),
                 Text("Decision Score"),
               ],
@@ -140,48 +158,16 @@ class _DecisionAppState extends State<DecisionApp> {
 
           SizedBox(height: 10),
 
-          // INPUT PRO/CON
+          // INPUTS
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: proController,
-                        decoration: InputDecoration(
-                          hintText: "Add Pro",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: addPro,
-                      child: Text("Add"),
-                    )
-                  ],
-                ),
+                _inputBox(proController, "Add Pro", Colors.green,
+                    Icons.add, addPro),
                 SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: conController,
-                        decoration: InputDecoration(
-                          hintText: "Add Con",
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    ElevatedButton(
-                      onPressed: addCon,
-                      child: Text("Add"),
-                    )
-                  ],
-                ),
+                _inputBox(conController, "Add Con", Colors.red,
+                    Icons.remove, addCon),
               ],
             ),
           ),
@@ -192,100 +178,89 @@ class _DecisionAppState extends State<DecisionApp> {
           Expanded(
             child: Row(
               children: [
-                // PROS
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text("Pros",
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green)),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: pros.length,
-                          itemBuilder: (context, index) {
-                            return Card(
-                              child: Column(
-                                children: [
-                                  ListTile(
-                                    title: Text(pros[index].text),
-                                    subtitle:
-                                        Text("Weight: ${pros[index].weight}"),
-                                    trailing: IconButton(
-                                      icon: Icon(Icons.delete,
-                                          color: Colors.red),
-                                      onPressed: () => removePro(index),
-                                    ),
-                                  ),
-                                  Slider(
-                                    min: 1,
-                                    max: 10,
-                                    divisions: 9,
-                                    value: pros[index].weight.toDouble(),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        pros[index].weight = value.toInt();
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // CONS
-                Expanded(
-                  child: Column(
-                    children: [
-                      Text("Cons",
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red)),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: cons.length,
-                          itemBuilder: (context, index) {
-                            return Card(
-                              child: Column(
-                                children: [
-                                  ListTile(
-                                    title: Text(cons[index].text),
-                                    subtitle:
-                                        Text("Weight: ${cons[index].weight}"),
-                                    trailing: IconButton(
-                                      icon: Icon(Icons.delete,
-                                          color: Colors.red),
-                                      onPressed: () => removeCon(index),
-                                    ),
-                                  ),
-                                  Slider(
-                                    min: 1,
-                                    max: 10,
-                                    divisions: 9,
-                                    value: cons[index].weight.toDouble(),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        cons[index].weight = value.toInt();
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildList("Pros", pros, Colors.green, removePro),
+                _buildList("Cons", cons, Colors.red, removeCon),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _inputBox(TextEditingController controller, String hint,
+      Color color, IconData icon, VoidCallback onTap) {
+    return Card(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: hint,
+                  border: InputBorder.none,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            icon: Icon(icon, color: color),
+            onPressed: onTap,
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildList(String title, List<DecisionItem> items,
+      Color color, Function(int) removeFn) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(title,
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: color)),
+          Expanded(
+            child: ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                return Card(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  margin:
+                      EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        title: Text(items[index].text),
+                        subtitle:
+                            Text("Weight: ${items[index].weight}"),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => removeFn(index),
+                        ),
+                      ),
+                      Slider(
+                        min: 1,
+                        max: 10,
+                        divisions: 9,
+                        value: items[index].weight.toDouble(),
+                        onChanged: (value) {
+                          setState(() {
+                            items[index].weight = value.toInt();
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],
