@@ -1,121 +1,294 @@
 import 'package:flutter/material.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MaterialApp(home: DecisionApp()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class DecisionItem {
+  String text;
+  int weight;
 
-  // This widget is the root of your application.
+  DecisionItem({required this.text, required this.weight});
+}
+
+class DecisionApp extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+  State<DecisionApp> createState() => _DecisionAppState();
+}
+
+class _DecisionAppState extends State<DecisionApp> {
+  String decisionTitle = "";
+
+  List<DecisionItem> pros = [];
+  List<DecisionItem> cons = [];
+
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController proController = TextEditingController();
+  final TextEditingController conController = TextEditingController();
+
+  double get score {
+    int totalPros = pros.fold(0, (sum, item) => sum + item.weight);
+    int totalCons = cons.fold(0, (sum, item) => sum + item.weight);
+
+    if (totalPros + totalCons == 0) return 0;
+
+    return (totalPros / (totalPros + totalCons)) * 100;
   }
-}
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  Color get scoreColor {
+    if (score >= 70) return Colors.green;
+    if (score >= 40) return Colors.orange;
+    return Colors.red;
+  }
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
+  void setTitle() {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      decisionTitle = titleController.text;
     });
   }
 
+  void addPro() {
+    if (proController.text.trim().isEmpty) return;
+
+    setState(() {
+      pros.add(DecisionItem(text: proController.text, weight: 5));
+      proController.clear();
+    });
+  }
+
+  void addCon() {
+    if (conController.text.trim().isEmpty) return;
+
+    setState(() {
+      cons.add(DecisionItem(text: conController.text, weight: 5));
+      conController.clear();
+    });
+  }
+
+  void removePro(int index) {
+    setState(() => pros.removeAt(index));
+  }
+
+  void removeCon(int index) {
+    setState(() => cons.removeAt(index));
+  }
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text("Decision App"),
+        centerTitle: true,
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+      body: Column(
+        children: [
+          SizedBox(height: 10),
+
+          // 📝 DECISION TITLE INPUT
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: titleController,
+                    decoration: InputDecoration(
+                      hintText: "Enter your decision (e.g. Change job?)",
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: setTitle,
+                  child: Text("Set"),
+                )
+              ],
             ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+          ),
+
+          // DISPLAY TITLE
+          if (decisionTitle.isNotEmpty)
+            Text(
+              decisionTitle,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+
+          SizedBox(height: 10),
+
+          // 🎯 CIRCLE SCORE
+          CircularPercentIndicator(
+            radius: 110,
+            lineWidth: 12,
+            percent: score / 100,
+            animation: true,
+            center: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "${score.toStringAsFixed(1)}%",
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                ),
+                Text("Decision Score"),
+              ],
+            ),
+            progressColor: scoreColor,
+            backgroundColor: Colors.grey.shade300,
+            circularStrokeCap: CircularStrokeCap.round,
+          ),
+
+          SizedBox(height: 10),
+
+          // INPUT PRO/CON
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: proController,
+                        decoration: InputDecoration(
+                          hintText: "Add Pro",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: addPro,
+                      child: Text("Add"),
+                    )
+                  ],
+                ),
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: conController,
+                        decoration: InputDecoration(
+                          hintText: "Add Con",
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: addCon,
+                      child: Text("Add"),
+                    )
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: 10),
+
+          // LISTS
+          Expanded(
+            child: Row(
+              children: [
+                // PROS
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text("Pros",
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green)),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: pros.length,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              child: Column(
+                                children: [
+                                  ListTile(
+                                    title: Text(pros[index].text),
+                                    subtitle:
+                                        Text("Weight: ${pros[index].weight}"),
+                                    trailing: IconButton(
+                                      icon: Icon(Icons.delete,
+                                          color: Colors.red),
+                                      onPressed: () => removePro(index),
+                                    ),
+                                  ),
+                                  Slider(
+                                    min: 1,
+                                    max: 10,
+                                    divisions: 9,
+                                    value: pros[index].weight.toDouble(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        pros[index].weight = value.toInt();
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // CONS
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text("Cons",
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red)),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: cons.length,
+                          itemBuilder: (context, index) {
+                            return Card(
+                              child: Column(
+                                children: [
+                                  ListTile(
+                                    title: Text(cons[index].text),
+                                    subtitle:
+                                        Text("Weight: ${cons[index].weight}"),
+                                    trailing: IconButton(
+                                      icon: Icon(Icons.delete,
+                                          color: Colors.red),
+                                      onPressed: () => removeCon(index),
+                                    ),
+                                  ),
+                                  Slider(
+                                    min: 1,
+                                    max: 10,
+                                    divisions: 9,
+                                    value: cons[index].weight.toDouble(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        cons[index].weight = value.toInt();
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
